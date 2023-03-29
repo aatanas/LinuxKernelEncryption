@@ -106,5 +106,5 @@ koje su enkriptovane sa trenutno postavljenim ključem.
 #### Modifikacija keyset alata
 Pri postavljanju ključa pomoću keyset alata, ključ se više ne zadaje kao argument na
 komandnoj linji. Alat se startuje bez argumenata, i od korisnika se očekuje da unese ključ po
-startovanju alata. Karakteri koje korisnik unosi treba da se ne prikazuju na ekranu za vreme
+startovanju alata. Karakteri koje korisnik unosi se ne prikazuju na ekranu za vreme
 unosa.
