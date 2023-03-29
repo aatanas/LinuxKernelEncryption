@@ -1,6 +1,7 @@
 # LinuxKernelEncryption
 
-The goal of this project is to provide an encryption and decryption mechanism for Linux using a transposition cipher. The project is written in C and assembly within the Linux kernel.
+The goal of this project is to provide an encryption and decryption mechanism for Linux using a transposition cipher.  
+The project is written in C and assembly within the Linux kernel.
 
 The system supports the following functionalities:
 - User can encrypt / decrypt files.
