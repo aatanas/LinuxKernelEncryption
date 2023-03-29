@@ -8,7 +8,7 @@ The system supports the following functionalities:
 - Reading and writing using standard system calls works on encrypted files as well as normal files.
 - The user can set the key used for encryption / decryption.
 - The user can generate a random key.
-- Dryptionirectory enc
+- Directory encryption
    - Includes encryption of all files within the directory, as well as files in subdirectories.
 - Temporary key caching, locally and globally. Cache is not inherited by child process.
 - Key storage for encrypted files, to avoid file corruption using the wrong key.
