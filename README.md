@@ -1,110 +1,106 @@
 # LinuxKernelEncryption
 
-Cilj ovog projekta je obezbediti mehanizam za enkripciju i dekripciju za Linux pomoću transpozicione šifre. Projekat je napisan u C i assembly unutar Linux kernela.
-Enkriptovani fajlovi ostaju enkriptovani i nakon gašenja i ponovnog paljenja
-sistema. Sistem podržava sledeće funkcionalnosti:
-- Korisnik može da enkriptuje / dekriptuje datoteke.
-- Čitanje i pisanje pomoću standardnih sistemskih poziva funkcioniše nad
-enkriptovanim datotekama, kao i nad normalnim datotekama.
-- Korisnik može da podešava ključ pomoću kojeg se vrši enkripcija / dekripcija.
-- Korisnik može da generiše nasumični ključ.
-- Enkripcija direktorijuma
-  - Podrazumeva enkripciju svih datoteka unutar direktorijuma, kao i datoteka u
-poddirektorijumima.
-- Keširanje ključa na određeno vreme, lokalno i globalno. Keš se ne nasleđuje kod child
-procesa.
-- Pamćenje ključa za enkriptovane datoteke, kako bi se izbeglo kvarenje datoteka
-upotrebom pogrešnog ključa.
-- Alat za postavljanje ključa koji ne ispisuje ključ na ekranu.
+The goal of this project is to provide an encryption and decryption mechanism for Linux using a transposition cipher. The project is written in C and assembly within the Linux kernel.
 
-#### Kriptografski algoritam
-Za potrebe enkriptovanja / dekriptovanja koristi se transpozicioni algoritam zasnovan na
-zameni kolona matrice, koji je opisan [ovde](http://practicalcryptography.com/ciphers/columnar-transposition-cipher/).
+The system supports the following functionalities:
+- User can encrypt / decrypt files.
+- Reading and writing using standard system calls works on encrypted files as well as normal files.
+- The user can set the key used for encryption / decryption.
+- The user can generate a random key.
+- Dryptionirectory enc
+   - Includes encryption of all files within the directory, as well as files in subdirectories.
+- Temporary key caching, locally and globally. Cache is not inherited by child process.
+- Key storage for encrypted files, to avoid file corruption using the wrong key.
+- Key setting tool that doesn't print the key on the screen.
 
-Datoteka se enkriptuje u blokovima od po 1024 bajta (čitav buffer_head bafer koji
-se inače koristi za čitanje i pisanje datoteka). Kao ključ se koristi niz printabilnih ASCII
-karaktera čija ASCII vrednost se koristi za transpoziciju. Dužina ključa će uvek biti neki
-stepen dvojke i manja od 1024, tako da matrica sa 1024 karaktera sigurno može da se
-formira sa tim brojem kolona. Ključ će uvek biti bez ponavljanja.
+#### Cryptographic algorithm
+For the purposes of encryption / decryption, a transposition algorithm based on
+matrix column transposition is used, which is described [here](http://practicalcryptography.com/ciphers/columnar-transposition-cipher/).
 
-Spisak enkriptovanih fajlova se zapisuje na disku. Ovu datoteku / blok nikako nije
-moguće obrisati, prepisati, izmeniti, i sl. osim normalnim radom sistema za enkripciju /
-dekripciju.
+The file is encrypted in blocks of 1024 bytes each (the entire buffer_head buffer which
+is otherwise used for reading and writing files). A string of printable ASCII characters is used as the key
+whose ASCII value is used for transposition. The length of the key will always be some
+power of two and less than 1024, so a matrix with 1024 characters can certainly be
+formed with that number of columns. The key will always be nonrepetitive.
 
-Nakon što korisnik prvi put podesi ključ za enkripciju, postaje moguće čitati i pisati
-enkriptovane datoteke. One mogu već da budu na disku, a mogu i da se obične datoteke
-enkriptuju pomoću posebne komande. Funkcije read i write rade normalno i sa
-enkriptovanim i sa ne-enkriptovanim datotekama.
+The list of encrypted files is written to disk. This file / block is 
+impossible to delete, overwrite, modify, etc. except for the normal operation of the encryption /
+decryption system.
 
-#### Alati
-##### *keyset \<kljuc>*
-Postavlja prosleđeni parametar kao trenutno aktivan globalan ključ. Dužina ključa mora da
-bude stepen dvojke i manji od 1024. Ako nije, prijavljuje se greška. Pri prvom pozivu ovog alata se
-čita spisak enkriptovanih fajlova sa diska, i smešta se u memoriju. Nakon toga, svaki poziv
-*read* ili *write* funkcija nad enkriptovanom datotekom se uspešno čita, odnosno piše, tj. 
-primenjuje se algoritam za enkripciju / dekripciju pri izvršavanju tih poziva.
+After the user sets the encryption key for the first time, it becomes possible to read and write
+encrypted files. They can already be on the disk, or they can be ordinary files
+encrypted using a special command. The functions read and write work normally and with
+encrypted and non-encrypted files.
+
+#### Tools
+##### *keyset \<key>*
+Sets the passed parameter as the currently active global key. The length of the key must
+be a power of two and less than 1024. At the first call of this tool, the program
+reads the list of encrypted files from the disk, and stores them in memory. After that, every call
+to *read* or *write* functions over the encrypted file is successfully performed, i.e. the algorithm 
+for encryption / decryption is applied when executing those calls.
 
 ##### *encr \<file>*
-Enkriptuje zadati fajl pomoću zadatog ključa, u slučaju da nije već enkriptovan. Ako je fajl
-već enkriptovan, prijavljuje se greška. Ovaj alat takođe u sistemu zabeležuje da je ovaj fajl
-enkriptovan. Ako ključ nije prethodno postavljen pomoću alata keyset, prijavljuje se greška.
+Encrypts the given file with the given key, in case it is not already encrypted. If the file
+is already encrypted, an error is reported. This tool also records in the system that this file
+is encrypted. If the key was not previously set using the keyset tool, an error is reported.
 
 ##### *decr \<file>*
-Dekriptuje zadati fajl pomoću zadatog ključa, u slučaju da je fajl prethodno enkriptovan. Ako
-fajl nije prethodno enkriptovan, prijavljuje se greška. Ovaj alat u sistemu zabeležuje da ovaj 
-fajl više nije enkriptovan. Ako ključ nije prethodno postavljen pomoću alata keyset,
-prijavljuje se greška.
+Decrypts the given file using the given key, in case the file was previously encrypted. If
+the file is not previously encrypted, an error is reported. This tool should also records in the system
+that this file is no longer encrypted. If the key was not previously set using the keyset tool,
+an error is reported.
 
 ##### *keyclear*
-Resetuje ključ na NULL, i onemogućava dalje enkriptovanje i dekriptovanje sve dok se ne
-pozove keyset ponovo. Funkcije *read* i *write* ponovo rade kao da nisu svesne
-enkripcije.
+Resets the key to NULL, and disables further encryption and decryption until
+*keyset* is called again. The *read* and *write* functions should again work as if they were unaware of
+encryption.
 
 ##### *keygen level*
-Generiše nasumični ključ sačinjen od printabilnih ASCII karaktera i ispisuje ga na ekranu.
-Parametar level može da bude jedno od:
-- 1 - generiše se ključ dužine 4;
-- 2 - generiše se ključ dužine 8;
-- 3 - generiše se ključ dužine 16.
-Ako level nije dato, ili nije jedna od ove tri vrednosti, prijavljuje se greška.
+Generates a random key made up of printable ASCII characters and prints it to the screen.
+The level parameter can be one of:
+- 1 - a key of length 4 is generated;
+- 2 - a key of length 8 is generated;
+- 3 - a key of length 16 is generated.
+If level is not given, or is not one of these three values, an error is reported.
 
-#### Enkripcija / dekripcija direktorijuma
-Ako korisnik izvrši sistemski poziv za enkriptovanje (pomoću alata encr) nad
-direktorijumom, dešava se sledeće:
-- Enkriptuju se sve datoteke unutar direktorijuma, kao i sam direktorijum.
-- Za svaki poddirektorijum unutar zadatog direktorijuma se ponavlja ista operacija.
+#### Directory encryption / decryption
+If the user makes a system call for encryption (using the encr tool) on a
+directory, the following happens:
+- All files inside the directory are encrypted, as well as the directory itself.
+- The same operation is repeated for each subdirectory within the given directory.
 
-Ova logika je ugrađena u sam sistemski poziv, ne u alat *encr*. Sistemski poziv i
-dalje ne funkcioniše ako ključ nije setovan.
+This logic is built into the system call itself, not the *encr* tool.  
+System call still doesn't work if the key is not set.
 
-Alat i sistemski poziv *decr* radi na isti ovaj način kada je pozvan nad
-direktorijumom.
+The tool and system call *decr* works the same way when called on a
+directory.
 
-#### Keširanje ključa na ograničeno vreme
-Sistemski poziv *keyset* može da postavi globalni ili lokalni ključ. Svaki
-proces ima svoj lokalni ključ koji može da postavi pomoću ovako modifikovanog
-keyset poziva. keyset tool i dalje postavlja globalni ključ.
+#### Key caching for a limited time
+The *keyset* system call can set a global or local key. Every
+process has its own local key that it can set using this modified
+*keyset* calls. the *keyset* tool still sets the global key.
 
-Za svaki proces sistem pamti kad je zadnji put pozvao *keyset* i ako prođe ordeđeno vreme
-(default 45 sec) sistem automatski briše ključ za taj proces (kao da je pozvan
-sistemski poziv *keyclear* koji radi lokalno).
+For each process, the system remembers the last time it called *keyset* and if the specified time has passed
+(default 45 sec.) the system automatically deletes the key for that process (as if it was
+*keyclear* system call that runs locally).
 
-Globalni ključ se prazni 2 min posle postavljanja.
+The global key is emptied 2 min after initialisation.
 
-*keyclear* poziv čisti ili globalni ili lokalni ključ, dok keyclear tool čisti globalni.
+The *keyclear* call clears either a global or a local key, while the *keyclear* tool clears the global one.
 
-Fork-ovani procesi ne nasleđuju keširan ključ roditelja.
+Forked processes do not inherit the parent's cached key.
 
-#### Pamćenje ključa za enkriptovane datoteke
-Pri enkriptovanju datoteke beleži se i hash vrednost ključa sa kojim je ona enkriptovana. 
-Ako se pokuša pristup datoteci (decr / read / write) sa pogrešnim
-ključem, umesto dekriptovanja vraća se kod o grešci -EINVAL.
+#### Key storage for encrypted files
+When encrypting a file, the hash value of the key with which it was encrypted is also recorded.
+If an attempt is made to access a file (decr / read / write) with a wrong
+key, the error code -EINVAL is returned instead of decryption.
 
-Pri dekriptovanju će operacija biti uspešna samo nad datotekama
-koje su enkriptovane sa trenutno postavljenim ključem.
+When decrypting, the operation will only succeed on files
+which are encrypted with the currently set key.
 
-#### Modifikacija keyset alata
-Pri postavljanju ključa pomoću keyset alata, ključ se više ne zadaje kao argument na
-komandnoj linji. Alat se startuje bez argumenata, i od korisnika se očekuje da unese ključ po
-startovanju alata. Karakteri koje korisnik unosi se ne prikazuju na ekranu za vreme
-unosa.
+#### Modification of the keyset tool
+When setting a key using the *keyset* tool, the key is no longer given as an argument to
+command line. The tool is started with no arguments, and the user is expected to enter the key when
+starting the tool. The characters that the user enters are not displayed on the screen while being
+input.
